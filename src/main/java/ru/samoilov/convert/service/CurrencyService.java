@@ -28,9 +28,6 @@ public class CurrencyService {
 
     public ResponseEntity<Currency> saveCurrency(String code, String name, String sign) {
         try {
-//            if (currencyDAO.exestByCode(code)) {
-//                return ResponseEntity.status(HttpStatus.CONFLICT).build();
-//            }
             Currency currency = new Currency();
             currency.setCode(code);
             currency.setName(name);
@@ -39,9 +36,6 @@ public class CurrencyService {
             return ResponseEntity.ok(currency);
         } catch (Exception e) {
             throw  new ConflictException("Валюта с таким кодом уже существует");
-//            e.printStackTrace();
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-//                    .build();
         }
     }
 }

@@ -18,20 +18,6 @@ import java.util.List;
 public class CurrencyController {
     private final CurrencyService currencyService;
 
-//    @GetMapping("/route1")
-//    public void  tryRoute1(){
-//        throw new BadRequestException("Сообщение для BadRequestException");
-//    }
-//
-//    @GetMapping("/route2")
-//    public void  tryRoute2(){
-//        throw new NotFoundException("Сообщение для NotFoundException");
-//    }
-//    @GetMapping("/route3")
-//    public void  tryRoute3(){
-//        throw new NullPointerException("Сообщение для NullPointerException");
-//    }
-
     @Autowired
     public CurrencyController(CurrencyService currencyService) {
         this.currencyService = currencyService;
@@ -40,11 +26,11 @@ public class CurrencyController {
     @GetMapping("/{code}")
     public List<Currency> showCurrency(@PathVariable("code") String code) {
         // return currencyService.getCurrenciesByCode(code);
-        List<Currency>currencies = currencyService.getCurrenciesByCode(code);
-        if(currencies.isEmpty()){
-            throw  new NotFoundException("Такая  валюта отсутствует: "+ code);
+        List<Currency> currencies = currencyService.getCurrenciesByCode(code);
+        if (currencies.isEmpty()) {
+            throw new NotFoundException("Такая  валюта отсутствует: " + code);
         }
-        return  currencies;
+        return currencies;
     }
 
     @GetMapping("/currencies")
