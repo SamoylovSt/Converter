@@ -1,14 +1,11 @@
 package ru.samoilov.convert.service;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import ru.samoilov.convert.dao.ExchangeRateDAO;
 import ru.samoilov.convert.dto.CurrencyDTO;
 import ru.samoilov.convert.dto.ExchangeRateDTO;
 import ru.samoilov.convert.dto.ExchangeResultDTO;
 import ru.samoilov.convert.exception.BadRequestException;
-import ru.samoilov.convert.exception.ConflictException;
 import ru.samoilov.convert.exception.NotFountExchengeRateException;
 import ru.samoilov.convert.models.ExchangeRate;
 
@@ -78,12 +75,9 @@ public class ExchangeRateService {
             exchangeRateDAO.exchangeRateSave(exchangeRate);
             resultDTO.add(exchangeRate);
             List<ExchangeRateDTO> resultList = getExchangeRateDTOList(resultDTO);
-            //return ResponseEntity.ok(exchangeRate);
             return resultList;
         } catch (Exception e) {
-//            e.printStackTrace();
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-            throw new BadRequestException("Сохранение обменного курса ошибка");
+            throw new BadRequestException("Обменный курс валюты отсутствует");
         }
     }
 
@@ -125,21 +119,3 @@ public class ExchangeRateService {
     }
 }
 
-//public ResponseEntity<ExchangeRate> saveExchangeRate(String baseCurrencyCode,
-//                                                     String targetCurrencyCode,
-//                                                     double rate) {
-//    try {
-//        if (exchangeRateDAO.exestByCodeBaseCurrency(baseCurrencyCode)) {
-//            return ResponseEntity.status(HttpStatus.CONFLICT).build();
-//        }
-//        ExchangeRate exchangeRate = new ExchangeRate();
-//        exchangeRate.setBaseCurrencyId(exchangeRateDAO.getCurrencyIdForCode(baseCurrencyCode));
-//        exchangeRate.setTargetCurrencyId(exchangeRateDAO.getCurrencyIdForCode(targetCurrencyCode));
-//        exchangeRate.setRate(BigDecimal.valueOf(rate));
-//        exchangeRateDAO.exchangeRateSave(exchangeRate);
-//        return ResponseEntity.ok(exchangeRate);
-//    } catch (Exception e) {
-//        e.printStackTrace();
-//        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-//    }
-//}

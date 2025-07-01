@@ -76,22 +76,5 @@ public class ExchangeRateDAO {
     public void changeRate(BigDecimal rate, int id) {
         jdbcTemplate.update("UPDATE exchange_rates set rate=? where id=?", rate, id);
 
-        //return jdbcTemplate.query("SELECT * FROM exchange_rates where id=?", new BeanPropertyRowMapper<>(ExchangeRateDTO.class), id);
     }
 }
-//public void exchangeRateSave(ExchangeRate exchangeRate) {
-//    KeyHolder keyHolder = new GeneratedKeyHolder();
-//    jdbcTemplate.update(connection -> {
-//        PreparedStatement ps = connection.prepareStatement(
-//                "INSERT INTO exchange_rates (base_currency_id, target_currency_id, rate) VALUES (?, ?, ?)",
-//                Statement.RETURN_GENERATED_KEYS);
-//        ps.setInt(1, exchangeRate.getBaseCurrencyId());
-//        ps.setInt(2, exchangeRate.getTargetCurrencyId());
-//        ps.setBigDecimal(3, exchangeRate.getRate());
-//        return ps;
-//    }, keyHolder);
-//    Number key = keyHolder.getKey();
-//    if (key != null) {
-//        exchangeRate.setId((int) key.longValue());
-//    }
-//}

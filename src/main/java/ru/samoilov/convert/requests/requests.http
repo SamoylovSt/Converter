@@ -4,7 +4,7 @@ GET http://localhost:8080/currency/currencies
 GET http://localhost:8080/currency
 
 ###
-GET http://localhost:8080/currency/bbb
+GET http://localhost:8080/currency/AUD
 
 ###
 POST http://localhost:8080/currency/save?code=CNY&name=Chinese Yuan&sign=%C2%A5
@@ -16,12 +16,11 @@ GET http://localhost:8080//exchangeRate/exchangeRates
 ###
 GET http://localhost:8080/exchangeRate/CNYAUD
 
-
 ###
 GET http://localhost:8080/exchangeRate/exchangeRates
 
 ###
-POST http://localhost:8080/exchangeRate/exchangeRates?baseCurrencyCode=CNY&targetCurrencyCode=AUD&rate=0.52
+POST http://localhost:8080/exchangeRate/exchangeRates?baseCurrencyCode=CNYS&targetCurrencyCode=AUD&rate=0.52
 
 ###
 GET http://localhost:8080/exchangeRate/exchange?from=CNY&to=AUD&amount=1

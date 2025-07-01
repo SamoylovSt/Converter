@@ -24,9 +24,9 @@ public class CurrencyDAO {
 
     public List<Currency> show(String code) {
 
-           return jdbcTemplate.query("SELECT * FROM currencies WHERE code=?",
-                   new BeanPropertyRowMapper<>(Currency.class), code
-           );
+        return jdbcTemplate.query("SELECT * FROM currencies WHERE code=?",
+                new BeanPropertyRowMapper<>(Currency.class), code
+        );
 
     }
 

@@ -59,10 +59,3 @@ public class ExchangeRateController {
     }
 }
 
-//@PostMapping("/exchangeRates")
-//@ResponseBody
-//public ResponseEntity<ExchangeRate> saveExchangeRate(@RequestParam("baseCurrencyCode") String baseCurrencyCode,
-//                                                     @RequestParam("targetCurrencyCode") String targetCurrencyCode,
-//                                                     @RequestParam("rate") double rate) {
-//    return exchangeRateService.saveExchangeRate(baseCurrencyCode, targetCurrencyCode, rate);
-//}
