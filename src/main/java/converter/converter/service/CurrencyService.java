@@ -2,6 +2,7 @@ package converter.converter.service;
 
 import converter.converter.dao.ConnectionPool;
 import converter.converter.dao.InterfaceCurrencyDAO;
+import converter.converter.exceptions.ErrorResponse;
 import converter.converter.models.Currency;
 
 import java.sql.*;
@@ -55,17 +56,8 @@ public class CurrencyService extends ConnectionPool implements InterfaceCurrency
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
-        } finally {
-            if (statement != null) {
-                statement.close();
-            }
-            if (connection != null) {
-                connection.close();
-            }
-
-            return currencies;
         }
-
+        return currencies;
 
     }
 
@@ -73,6 +65,9 @@ public class CurrencyService extends ConnectionPool implements InterfaceCurrency
     public Currency getCurrencyForCode(String code) throws SQLException {
         String SQL = "SELECT id, code, full_name, sign FROM currencies WHERE code=?";
         Currency currency = new Currency();
+      if(code.length()!=3){
+          return currency;
+      }
         PreparedStatement preparedStatement = null;
         try {
             preparedStatement = connection.prepareStatement(SQL);
@@ -88,13 +83,9 @@ public class CurrencyService extends ConnectionPool implements InterfaceCurrency
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-//        finally {
-//            if (preparedStatement != null) {
-//                preparedStatement.close();
-//            }
-//            if (connection != null) {
-//                connection.close();
-//            }
+//        if (currency.getCode()==null){
+//
+//             throw new RuntimeException();
 //        }
         return currency;
     }
@@ -141,15 +132,6 @@ public class CurrencyService extends ConnectionPool implements InterfaceCurrency
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException(e);
-        } finally {
-            if (preparedStatement != null) {
-                preparedStatement.close();
-            }
-            if (connection != null) {
-                connection.close();
-            }
         }
     }
-
-
 }

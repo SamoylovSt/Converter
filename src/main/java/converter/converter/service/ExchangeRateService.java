@@ -5,7 +5,6 @@ import converter.converter.dao.InterfaceExchangeRateDAO;
 import converter.converter.dto.ExchangeDTO;
 import converter.converter.dto.ExchangeRateDTO;
 import converter.converter.models.Currency;
-import converter.converter.models.ExchangeRate;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -13,15 +12,40 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-import static java.sql.DriverManager.getConnection;
-
 public class ExchangeRateService extends ConnectionPool implements InterfaceExchangeRateDAO {
 
     Connection connection = getConnection();
 
 
     @Override
-    public void add(ExchangeRate exchangeRate) {
+    public ExchangeRateDTO addNewExchangeRate(String baseCurrencyCode, String targetCurrencyCode, BigDecimal rate) throws SQLException {
+        ExchangeRateDTO exchangeRateDTOresult = new ExchangeRateDTO();
+        CurrencyService currencyService = new CurrencyService();
+        String SQL = "insert into exchangerates (base_currency_id, target_currency_id, rate)\n" +
+                "VALUES (\n" +
+                "        ?,\n" +
+                "        ?,\n" +
+                "        ?\n" +
+                "       )";
+
+        PreparedStatement preparedStatement = null;
+        exchangeRateDTOresult.setBaseCurrency(currencyService.getCurrencyForCode(baseCurrencyCode));
+        exchangeRateDTOresult.setTargetCurrency(currencyService.getCurrencyForCode(targetCurrencyCode));
+        exchangeRateDTOresult.setRate(rate);
+        try {
+            preparedStatement = connection.prepareStatement(SQL);
+            preparedStatement.setInt(1,
+                    currencyService.getCurrencyForCode(baseCurrencyCode).getId());
+            preparedStatement.setInt(2,
+                    currencyService.getCurrencyForCode(targetCurrencyCode).getId());
+            preparedStatement.setBigDecimal(3, rate);
+
+            preparedStatement.executeUpdate();
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return exchangeRateDTOresult;
 
     }
 
@@ -50,17 +74,18 @@ public class ExchangeRateService extends ConnectionPool implements InterfaceExch
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
-        } finally {
-            if (statement != null) {
-                statement.close();
-            }
-            if (connection != null) {
-                connection.close();
-            }
-
-            return exchangeRates;
         }
-
+//        finally {
+//            if (statement != null) {
+//                statement.close();
+//            }
+//            if (connection != null) {
+//                connection.close();
+//            }
+//
+//
+//        }
+        return exchangeRates;
 
     }
 
@@ -99,6 +124,7 @@ public class ExchangeRateService extends ConnectionPool implements InterfaceExch
     public ExchangeRateDTO update(String code, BigDecimal newRate) throws SQLException {
         ExchangeRateDTO exchangeRateDTO = getExchangeRateForCode(code);
         int exchangeRateId = exchangeRateDTO.getId();
+
         String SQL = "UPDATE exchangerates\n" +
                 "set rate=?\n" +
                 "where id=?";
@@ -125,8 +151,7 @@ public class ExchangeRateService extends ConnectionPool implements InterfaceExch
 
         if (hasExchangeRate(exchangeRateDTOForExchange)) {
             System.out.println("estb");
-            // crossExchange(fromCurrency,toCurrency,amount);
-            System.out.println(fromCurrency + " " + toCurrency + "" + amount);
+            System.out.println(fromCurrency + " " + toCurrency + " " + amount);
             rate = exchangeRateDTOForExchange.getRate();
             convertedAmount = rate.multiply(amount);
         } else if (!hasExchangeRate(exchangeRateDTOForExchange)) {
@@ -146,18 +171,9 @@ public class ExchangeRateService extends ConnectionPool implements InterfaceExch
                 convertedAmount = amount.multiply(getCrossExchangeRate(fromCurrency, toCurrency, amount));
                 rate = getCrossExchangeRate(fromCurrency, toCurrency, amount);
             }
-
         }
 
 
-//        if (hasExchangeRate(exchangeRateDTOForExchange)){
-//            System.out.println("cross course");
-//            convertedAmount = amount.multiply(getCrossExchangeRate(fromCurrency,toCurrency,amount));
-//            rate=getCrossExchangeRate(fromCurrency,toCurrency,amount);
-//        }
-//        convertedAmount = amount.multiply(getCrossExchangeRate(fromCurrency, toCurrency, amount));
-//
-//         rate=getCrossExchangeRate(fromCurrency,toCurrency,amount);
         CurrencyService currencyService = new CurrencyService();
         ExchangeDTO exchangeDTOResult = new ExchangeDTO();
         exchangeDTOResult.setBaseCurrency(currencyService.getCurrencyForCode(fromCurrency));//exchangeRateDTOForExchange.getBaseCurrency()
@@ -177,31 +193,58 @@ public class ExchangeRateService extends ConnectionPool implements InterfaceExch
         }
     }
 
-    public BigDecimal getCrossExchangeRate(String fromCurrency, String toCurrency, BigDecimal amount) throws SQLException {
+    public BigDecimal getCrossExchangeRate(String fromCurrency,
+                                           String toCurrency,
+                                           BigDecimal amount) throws SQLException {
 
-        //usd+from=rate1 вызовом echange-> .getRate
-        //usd+to=rate2 вызовом echange-> .getRate
-        //result=rate1/rate2
-        ExchangeDTO USDfrom = exchange("USD", toCurrency, amount);
-        ExchangeDTO USDto = exchange("USD", fromCurrency, amount);
-   //     ExchangeRateDTO USDfrom = getExchangeRateForCode("USD" + fromCurrency);
-//        if (USDfrom.getRate() == null) {
-//            USDfrom =   getExchangeRateForCode(fromCurrency + "USD");
-//        }
-        //      ExchangeRateDTO USDto = getExchangeRateForCode("USD"+toCurrency ) ;
-//        if (USDto.getRate() == null) {
-//            USDto = getExchangeRateForCode( toCurrency+"USD" );
-//        }
+        ExchangeDTO USDfrom = new ExchangeDTO();
+        ExchangeDTO USDto = new ExchangeDTO();
+
+//        USDfrom = exchange("USD", toCurrency, amount);
+//        USDto = exchange("USD", fromCurrency, amount);
+        USDfrom = getExchangeDTOAndCheckUSDForCrossСourse("USD", toCurrency, amount);
+        USDto = getExchangeDTOAndCheckUSDForCrossСourse("USD", fromCurrency, amount);
+
         BigDecimal rateFromCurrency = USDfrom.getRate();
         System.out.println(rateFromCurrency + " rateFromCurrency");
 
         BigDecimal rateToCurrency = USDto.getRate();
         System.out.println(rateToCurrency + " rateToCurrency");
-        BigDecimal crossExchange = rateFromCurrency.divide(rateToCurrency, 3, RoundingMode.HALF_UP);
+        BigDecimal crossExchange = rateFromCurrency.divide(rateToCurrency, 2, RoundingMode.HALF_UP);
         return crossExchange;
-
     }
 
+    public ExchangeDTO getExchangeDTOAndCheckUSDForCrossСourse(String fromCurrency,
+                                                               String toCurrency, BigDecimal amount) throws SQLException {
+        ExchangeRateDTO exchangeRateDTOForExchange = getExchangeRateForCode(fromCurrency + toCurrency);
+        BigDecimal rate = null;
+        BigDecimal convertedAmount = null;
+
+        if (hasExchangeRate(exchangeRateDTOForExchange)) {
+            rate = exchangeRateDTOForExchange.getRate();
+            convertedAmount = rate.multiply(amount);
+        } else if (!hasExchangeRate(exchangeRateDTOForExchange)) {
+            String from = toCurrency;
+            String to = fromCurrency;
+            exchangeRateDTOForExchange = getExchangeRateForCode(from + to);
+            if (hasExchangeRate(exchangeRateDTOForExchange)) {
+                rate = exchangeRateDTOForExchange.getRate();
+                BigDecimal reverse = BigDecimal.ONE.divide(rate, 3, RoundingMode.HALF_UP);
+                System.out.println(reverse);
+                rate = reverse;
+                convertedAmount = amount.multiply(reverse);
+            }
+        }
+        CurrencyService currencyService = new CurrencyService();
+        ExchangeDTO exchangeDTOResult = new ExchangeDTO();
+        exchangeDTOResult.setBaseCurrency(currencyService.getCurrencyForCode(fromCurrency));
+        exchangeDTOResult.setTargetCurrency(currencyService.getCurrencyForCode(toCurrency));
+        exchangeDTOResult.setRate(rate);
+        exchangeDTOResult.setAmount(amount);
+        exchangeDTOResult.setConvertedAmount(convertedAmount);
+
+        return exchangeDTOResult;
+    }
 }
 
 

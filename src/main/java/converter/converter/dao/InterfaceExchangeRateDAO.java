@@ -9,7 +9,7 @@ import java.util.List;
 
 public interface InterfaceExchangeRateDAO {
 
-    void add (ExchangeRate exchangeRate);
+    ExchangeRateDTO addNewExchangeRate (String baseCurrencyCode,String targetCurrencyCode, BigDecimal rate) throws SQLException;
 
     List<ExchangeRateDTO> getAllExchangeRates() throws SQLException;
 
