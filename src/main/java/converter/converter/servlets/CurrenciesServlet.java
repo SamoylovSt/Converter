@@ -61,10 +61,9 @@ public class CurrenciesServlet extends HttpServlet {
             return;
         }
         if (req.getParameter("name").length() > 15
-                || !req.getParameter("name").matches("[a-zA-Z]+")
+                || !req.getParameter("name").matches("[a-zA-Z\\s]+")
                 || !req.getParameter("code").matches("[a-zA-Z]+")
                 || req.getParameter("code").length() != 3
-                || !req.getParameter("sign").matches("[0-9.]+")
                 || req.getParameter("sign").length() > 2
         ) {
             resp.setStatus(404);

@@ -1,25 +1,53 @@
 package converter.converter.dao;
 
+import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Properties;
+
+
 
 public class ConnectionPool {
-    private static final String DB_DRIVER = "org.postgresql.Driver";
-    private static final String URL = "jdbc:postgresql://localhost:5432/postgres";
-    private static final String USERNAME = "postgres";
-    private static final String PASSWORD = "postgres";
 
-    public Connection getConnection() {
-        Connection connection = null;
+
+    private static  final Properties properties= new Properties();
+
+    static {
+        loadProperties();
+    }
+
+    private  static void loadProperties(){
+        try(InputStream input= ConnectionPool.class.getClassLoader()
+                .getResourceAsStream("database.properties")){
+            if(input==null){
+                System.out.println("Sorry, unable to find database.properties");
+                return;
+            }
+            properties.load(input);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    public  Connection getConnection(){
+        Connection connection= null;
+
         try {
-            Class.forName(DB_DRIVER);
-            connection = DriverManager.getConnection(URL, USERNAME, PASSWORD);
+            Class.forName(properties.getProperty("db.driver"));
+            connection= DriverManager.getConnection(
+                    properties.getProperty("db.url"),
+                    properties.getProperty("db.username"),
+                    properties.getProperty("db.password")
+            );
             System.out.println("Connection ok");
-        } catch (ClassNotFoundException | SQLException e) {
+        } catch (ClassNotFoundException  | SQLException e) {
             e.printStackTrace();
             System.out.println("Connection error");
         }
         return connection;
+
     }
+
+
 }
