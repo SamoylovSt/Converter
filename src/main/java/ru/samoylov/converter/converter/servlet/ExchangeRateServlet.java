@@ -1,10 +1,9 @@
-package converter.converter.servlets;
+package ru.samoylov.converter.converter.servlet;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import converter.converter.dto.ExchangeDTO;
-import converter.converter.exceptions.ErrorResponse;
-import converter.converter.service.CurrencyService;
-import converter.converter.service.ExchangeRateService;
+import ru.samoylov.converter.converter.dto.ExchangeDTO;
+import ru.samoylov.converter.converter.exception.ErrorResponse;
+import ru.samoylov.converter.converter.dao.ExchangeRateDao;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -13,24 +12,16 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.math.BigDecimal;
-import java.net.HttpURLConnection;
 import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.Scanner;
 
 @WebServlet(urlPatterns = {"/exchangeRate/*", "/exchange"})
 public class ExchangeRateServlet extends HttpServlet {
+    ObjectMapper objectMapper = new ObjectMapper();
+    ExchangeRateDao exchangeRateDao = new ExchangeRateDao();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        resp.setContentType("application/json");
-
-        ObjectMapper objectMapper = new ObjectMapper();
-        ExchangeRateService exchangeRateService = new ExchangeRateService();
-        CurrencyService currencyService = new CurrencyService();
         ExchangeDTO fromResponse = new ExchangeDTO();
         String uri = req.getRequestURI();
         String contextPath = req.getContextPath();
@@ -50,7 +41,7 @@ public class ExchangeRateServlet extends HttpServlet {
             }
 
             try {
-                if (exchangeRateService.getExchangeRateForCode(code).getBaseCurrency()==null){
+                if (exchangeRateDao.getExchangeRateForCode(code).getBaseCurrency() == null) {
                     resp.setStatus(404);
                     objectMapper.writeValue(resp.getWriter(), new ErrorResponse("Обменный курс для пары не найден"));
                 }
@@ -59,7 +50,7 @@ public class ExchangeRateServlet extends HttpServlet {
             }
 
             try {
-                objectMapper.writeValue(resp.getWriter(), exchangeRateService.getExchangeRateForCode(code));
+                objectMapper.writeValue(resp.getWriter(), exchangeRateDao.getExchangeRateForCode(code));
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
@@ -70,25 +61,18 @@ public class ExchangeRateServlet extends HttpServlet {
             String amount = req.getParameter("amount");
 
             try {
-                fromResponse = exchangeRateService.exchange(from, to, new BigDecimal(amount));
+                fromResponse = exchangeRateDao.exchange(from, to, new BigDecimal(amount));
                 objectMapper.writeValue(resp.getWriter(), fromResponse);
 
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
-
         }
 
     }
 
     @Override
     protected void doPatch(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        req.setCharacterEncoding("UTF-8");
-        resp.setContentType("application/json");
-        ObjectMapper objectMapper = new ObjectMapper();
-        ExchangeRateService exchangeRateService = new ExchangeRateService();
-
-
         BufferedReader reader = req.getReader();
         StringBuilder requestBody = new StringBuilder();
         String line;
@@ -99,20 +83,18 @@ public class ExchangeRateServlet extends HttpServlet {
         String requestBodyString = requestBody.toString();
         String rate = requestBodyString.substring(5);
 
-
-
         String pathInfo = req.getPathInfo();
-        String code = pathInfo != null ? pathInfo.substring(1) : null;// проверить
+        String code = pathInfo != null ? pathInfo.substring(1) : null;
         System.out.println(code);
 
-        if (rate.length()<1){
+        if (rate.length() < 1) {
             resp.setStatus(400);
             objectMapper.writeValue(resp.getWriter(), new ErrorResponse("Отсутствует нужное поле формы"));
             return;
         }
         try {
-            if (exchangeRateService.getExchangeRateForCode(code).getBaseCurrency()==null
-            || exchangeRateService.getExchangeRateForCode(code).getTargetCurrency()==null ){
+            if (exchangeRateDao.getExchangeRateForCode(code).getBaseCurrency() == null
+                    || exchangeRateDao.getExchangeRateForCode(code).getTargetCurrency() == null) {
                 resp.setStatus(404);
                 objectMapper.writeValue(resp.getWriter(), new ErrorResponse("Валютная пара отсутствует в базе данных"));
                 return;
@@ -122,7 +104,7 @@ public class ExchangeRateServlet extends HttpServlet {
         }
 
         try {
-            objectMapper.writeValue(resp.getWriter(), exchangeRateService.update(code, new BigDecimal(rate)));
+            objectMapper.writeValue(resp.getWriter(), exchangeRateDao.update(code, new BigDecimal(rate)));
 
         } catch (SQLException e) {
             throw new RuntimeException(e);

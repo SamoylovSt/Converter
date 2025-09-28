@@ -1,7 +1,7 @@
-package converter.converter.dto;
+package ru.samoylov.converter.converter.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import converter.converter.models.Currency;
+import ru.samoylov.converter.converter.model.Currency;
 
 import java.math.BigDecimal;
 

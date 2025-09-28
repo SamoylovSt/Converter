@@ -1,9 +1,9 @@
-package converter.converter.servlets;
+package ru.samoylov.converter.converter.servlet;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import converter.converter.exceptions.ErrorResponse;
-import converter.converter.service.CurrencyService;
-import converter.converter.service.ExchangeRateService;
+import ru.samoylov.converter.converter.exception.ErrorResponse;
+import ru.samoylov.converter.converter.dao.CurrencyDao;
+import ru.samoylov.converter.converter.dao.ExchangeRateDao;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -16,32 +16,22 @@ import java.sql.SQLException;
 
 @WebServlet("/exchangeRates")
 public class SecondExchangeRateServlet extends HttpServlet {
+    ObjectMapper objectMapper = new ObjectMapper();
+    ExchangeRateDao exchangeRateDao = new ExchangeRateDao();
+    CurrencyDao currencyDao = new CurrencyDao();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        resp.setContentType("application/json");
-        ObjectMapper objectMapper = new ObjectMapper();
-        ExchangeRateService exchangeRateService= new ExchangeRateService();
-
-
         try {
-            objectMapper.writeValue(resp.getWriter(), exchangeRateService.getAllExchangeRates());
+            objectMapper.writeValue(resp.getWriter(), exchangeRateDao.getAllExchangeRates());
         } catch (SQLException e) {
-            // throw new RuntimeException(e);
             resp.setStatus(500);
             objectMapper.writeValue(resp.getWriter(), new ErrorResponse("База данных недоступна"));
-            // не проверено
         }
     }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-
-        resp.setContentType("application/json");
-        ObjectMapper objectMapper = new ObjectMapper();
-        ExchangeRateService exchangeRateService = new ExchangeRateService();
-        CurrencyService currencyService= new CurrencyService();
-
         String baseCurrencyCode = req.getParameter("baseCurrencyCode");
         String targetCurrencyCode = req.getParameter("targetCurrencyCode");
         BigDecimal rate = new BigDecimal(req.getParameter("rate"));
@@ -55,8 +45,8 @@ public class SecondExchangeRateServlet extends HttpServlet {
         }
 
         try {
-            if(exchangeRateService.getExchangeRateForCode(baseCurrencyCode+targetCurrencyCode).getBaseCurrency()!= null
-            || exchangeRateService.getExchangeRateForCode(baseCurrencyCode+targetCurrencyCode).getTargetCurrency()!= null){
+            if (exchangeRateDao.getExchangeRateForCode(baseCurrencyCode + targetCurrencyCode).getBaseCurrency() != null
+                    || exchangeRateDao.getExchangeRateForCode(baseCurrencyCode + targetCurrencyCode).getTargetCurrency() != null) {
                 resp.setStatus(409);
                 objectMapper.writeValue(resp.getWriter(), new ErrorResponse("Валютная пара с таким кодом уже существует"));
                 return;
@@ -65,8 +55,8 @@ public class SecondExchangeRateServlet extends HttpServlet {
             throw new RuntimeException(e);
         }
         try {
-            if(currencyService.getCurrencyForCode(baseCurrencyCode).getCode()==null
-                    || currencyService.getCurrencyForCode(targetCurrencyCode).getCode()==null){
+            if (currencyDao.getCurrencyForCode(baseCurrencyCode).getCode() == null
+                    || currencyDao.getCurrencyForCode(targetCurrencyCode).getCode() == null) {
 
                 resp.setStatus(404);
                 objectMapper.writeValue(resp.getWriter(), new ErrorResponse(" Валюта из валютной пары не существует в БД"));
@@ -78,12 +68,10 @@ public class SecondExchangeRateServlet extends HttpServlet {
 
         try {
             objectMapper.writeValue(resp.getWriter(),
-                    exchangeRateService.addNewExchangeRate(baseCurrencyCode, targetCurrencyCode, rate));
+                    exchangeRateDao.addNewExchangeRate(baseCurrencyCode, targetCurrencyCode, rate));
 
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-
-
     }
 }

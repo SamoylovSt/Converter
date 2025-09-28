@@ -1,9 +1,9 @@
-package converter.converter.servlets;
+package ru.samoylov.converter.converter.servlet;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import converter.converter.exceptions.ErrorResponse;
-import converter.converter.models.Currency;
-import converter.converter.service.CurrencyService;
+import ru.samoylov.converter.converter.exception.ErrorResponse;
+import ru.samoylov.converter.converter.model.Currency;
+import ru.samoylov.converter.converter.dao.CurrencyDao;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -13,18 +13,13 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 import java.sql.*;
-
-
 @WebServlet("/currency/*")
 public class CurrencyServlet extends HttpServlet {
-
+    ObjectMapper objectMapper = new ObjectMapper();
+    CurrencyDao currencyDao = new CurrencyDao();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        resp.setContentType("application/json");
-        ObjectMapper objectMapper = new ObjectMapper();
-        CurrencyService currencyService = new CurrencyService();
-
 
         String pathInfo = req.getPathInfo();
         String code = pathInfo != null ? pathInfo.substring(1) : null;// проверить
@@ -39,7 +34,7 @@ public class CurrencyServlet extends HttpServlet {
         }
 
         try {
-            if (currencyService.getCurrencyForCode(code).getCode()==null){
+            if (currencyDao.getCurrencyForCode(code).getCode()==null){
                 resp.setStatus(404);
                 objectMapper.writeValue(resp.getWriter(), new ErrorResponse("Валюта не найдена"));
             }
@@ -48,14 +43,11 @@ public class CurrencyServlet extends HttpServlet {
         }
 
         try {
-            Currency currency = currencyService.getCurrencyForCode(code);
+            Currency currency = currencyDao.getCurrencyForCode(code);
             objectMapper.writeValue(resp.getWriter(), currency);
         } catch (SQLException e) {
              throw new RuntimeException(e);
-             //не сделал код ответа с 500
         }
-
     }
-
 
 }

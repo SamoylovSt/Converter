@@ -1,4 +1,4 @@
-package converter.converter.models;
+package ru.samoylov.converter.converter.model;
 
 public class Currency {
 

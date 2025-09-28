@@ -1,10 +1,9 @@
-package converter.converter.service;
+package ru.samoylov.converter.converter.dao;
 
-import converter.converter.dao.ConnectionPool;
-import converter.converter.dao.InterfaceExchangeRateDAO;
-import converter.converter.dto.ExchangeDTO;
-import converter.converter.dto.ExchangeRateDTO;
-import converter.converter.models.Currency;
+import ru.samoylov.converter.converter.util.ConnectionPool;
+import ru.samoylov.converter.converter.dto.ExchangeDTO;
+import ru.samoylov.converter.converter.dto.ExchangeRateDTO;
+import ru.samoylov.converter.converter.model.Currency;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -12,38 +11,38 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ExchangeRateService extends ConnectionPool implements InterfaceExchangeRateDAO {
+public class ExchangeRateDao implements InterfaceExchangeRateDAO {
 
-    Connection connection = getConnection();
+    private final static String ADD_SQL = "insert into exchangerates (base_currency_id, target_currency_id, rate) VALUES (?, ?, ?)";
+    private final static String GET_ALL_SQL = "SELECT * FROM exchangerates";
+    private final static String GET_FOR_CODE_SQL = "SELECT id, base_currency_id, target_currency_id, rate FROM exchangerates WHERE base_currency_id=? and target_currency_id=?";
+    private final static String UPDATE_SQL = "UPDATE exchangerates SET rate=? WHERE id=?";
 
+    ConnectionPool connectionPool = new ConnectionPool();
 
     @Override
     public ExchangeRateDTO addNewExchangeRate(String baseCurrencyCode, String targetCurrencyCode, BigDecimal rate) throws SQLException {
         ExchangeRateDTO exchangeRateDTOresult = new ExchangeRateDTO();
-        CurrencyService currencyService = new CurrencyService();
-        String SQL = "insert into exchangerates (base_currency_id, target_currency_id, rate)\n" +
-                "VALUES (\n" +
-                "        ?,\n" +
-                "        ?,\n" +
-                "        ?\n" +
-                "       )";
+        CurrencyDao currencyDao = new CurrencyDao();
 
-        PreparedStatement preparedStatement = null;
-        exchangeRateDTOresult.setBaseCurrency(currencyService.getCurrencyForCode(baseCurrencyCode));
-        exchangeRateDTOresult.setTargetCurrency(currencyService.getCurrencyForCode(targetCurrencyCode));
+        exchangeRateDTOresult.setBaseCurrency(currencyDao.getCurrencyForCode(baseCurrencyCode));
+        exchangeRateDTOresult.setTargetCurrency(currencyDao.getCurrencyForCode(targetCurrencyCode));
         exchangeRateDTOresult.setRate(rate);
+        var connection = connectionPool.get();
         try {
-            preparedStatement = connection.prepareStatement(SQL);
+            var preparedStatement = connection.prepareStatement(ADD_SQL);
             preparedStatement.setInt(1,
-                    currencyService.getCurrencyForCode(baseCurrencyCode).getId());
+                    currencyDao.getCurrencyForCode(baseCurrencyCode).getId());
             preparedStatement.setInt(2,
-                    currencyService.getCurrencyForCode(targetCurrencyCode).getId());
+                    currencyDao.getCurrencyForCode(targetCurrencyCode).getId());
             preparedStatement.setBigDecimal(3, rate);
 
             preparedStatement.executeUpdate();
 
         } catch (SQLException e) {
             throw new RuntimeException(e);
+        } finally {
+            connection.close();
         }
         return exchangeRateDTOresult;
 
@@ -51,19 +50,15 @@ public class ExchangeRateService extends ConnectionPool implements InterfaceExch
 
     public List<ExchangeRateDTO> getAllExchangeRates() throws SQLException {
         List<ExchangeRateDTO> exchangeRates = new ArrayList<>();
-        String SQL = "SELECT * FROM exchangerates";
-        CurrencyService currencyService = new CurrencyService();
-        Currency baseCurrency = new Currency();
-        Currency targetCurrency = new Currency();
-
-        Statement statement = null;
+        CurrencyDao currencyDao = new CurrencyDao();
+        var connection = connectionPool.get();
         try {
-            statement = connection.createStatement();
-            ResultSet resultSet = statement.executeQuery(SQL);
+            var statement = connection.createStatement();
+            ResultSet resultSet = statement.executeQuery(GET_ALL_SQL);
             while (resultSet.next()) {
                 ExchangeRateDTO exchangeRateDTO = new ExchangeRateDTO();
-                baseCurrency = currencyService.getCurrencyForId(resultSet.getInt("base_currency_id"));
-                targetCurrency = currencyService.getCurrencyForId(resultSet.getInt("target_currency_id"));
+                var baseCurrency = currencyDao.getCurrencyForId(resultSet.getInt("base_currency_id"));
+                var targetCurrency = currencyDao.getCurrencyForId(resultSet.getInt("target_currency_id"));
 
                 exchangeRateDTO.setId(resultSet.getInt("id"));
                 exchangeRateDTO.setBaseCurrency(baseCurrency);
@@ -74,35 +69,23 @@ public class ExchangeRateService extends ConnectionPool implements InterfaceExch
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
+        } finally {
+            connection.close();
         }
-//        finally {
-//            if (statement != null) {
-//                statement.close();
-//            }
-//            if (connection != null) {
-//                connection.close();
-//            }
-//
-//
-//        }
         return exchangeRates;
-
     }
 
     @Override
     public ExchangeRateDTO getExchangeRateForCode(String code) throws SQLException {
-        CurrencyService currencyService = new CurrencyService();
-        String SQL = "SELECT id, base_currency_id, target_currency_id, rate FROM exchangerates WHERE base_currency_id=? and target_currency_id=?";
+        CurrencyDao currencyDao = new CurrencyDao();
         ExchangeRateDTO exchangeRateDTO = new ExchangeRateDTO();
-        PreparedStatement preparedStatement = null;
         String firstCurrencyCode = code.substring(0, 3);
         String secondCorrencyCode = code.substring(3);
-        Currency baseCurrency = currencyService.getCurrencyForCode(firstCurrencyCode);
-        Currency targetCurrency = currencyService.getCurrencyForCode(secondCorrencyCode);
-
-
+        Currency baseCurrency = currencyDao.getCurrencyForCode(firstCurrencyCode);
+        Currency targetCurrency = currencyDao.getCurrencyForCode(secondCorrencyCode);
+        var connection = connectionPool.get();
         try {
-            preparedStatement = connection.prepareStatement(SQL);
+            var preparedStatement = connection.prepareStatement(GET_FOR_CODE_SQL);
             preparedStatement.setInt(1, baseCurrency.getId());
             preparedStatement.setInt(2, targetCurrency.getId());
 
@@ -116,6 +99,8 @@ public class ExchangeRateService extends ConnectionPool implements InterfaceExch
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
+        } finally {
+            connection.close();
         }
         return exchangeRateDTO;
     }
@@ -125,14 +110,8 @@ public class ExchangeRateService extends ConnectionPool implements InterfaceExch
         ExchangeRateDTO exchangeRateDTO = getExchangeRateForCode(code);
         int exchangeRateId = exchangeRateDTO.getId();
 
-        String SQL = "UPDATE exchangerates\n" +
-                "set rate=?\n" +
-                "where id=?";
-
-        PreparedStatement preparedStatement = null;
-
         try {
-            preparedStatement = connection.prepareStatement(SQL);
+            var preparedStatement = connectionPool.get().prepareStatement(UPDATE_SQL);
             preparedStatement.setBigDecimal(1, newRate);
             preparedStatement.setInt(2, exchangeRateId);
 
@@ -142,7 +121,6 @@ public class ExchangeRateService extends ConnectionPool implements InterfaceExch
         }
         return getExchangeRateForCode(code);
     }
-
 
     public ExchangeDTO exchange(String fromCurrency, String toCurrency, BigDecimal amount) throws SQLException {
         ExchangeRateDTO exchangeRateDTOForExchange = getExchangeRateForCode(fromCurrency + toCurrency);
@@ -173,11 +151,10 @@ public class ExchangeRateService extends ConnectionPool implements InterfaceExch
             }
         }
 
-
-        CurrencyService currencyService = new CurrencyService();
+        CurrencyDao currencyDao = new CurrencyDao();
         ExchangeDTO exchangeDTOResult = new ExchangeDTO();
-        exchangeDTOResult.setBaseCurrency(currencyService.getCurrencyForCode(fromCurrency));//exchangeRateDTOForExchange.getBaseCurrency()
-        exchangeDTOResult.setTargetCurrency(currencyService.getCurrencyForCode(toCurrency));//exchangeRateDTOForExchange.getTargetCurrency()
+        exchangeDTOResult.setBaseCurrency(currencyDao.getCurrencyForCode(fromCurrency));//exchangeRateDTOForExchange.getBaseCurrency()
+        exchangeDTOResult.setTargetCurrency(currencyDao.getCurrencyForCode(toCurrency));//exchangeRateDTOForExchange.getTargetCurrency()
         exchangeDTOResult.setRate(rate);
         exchangeDTOResult.setAmount(amount);
         exchangeDTOResult.setConvertedAmount(convertedAmount);
@@ -197,13 +174,8 @@ public class ExchangeRateService extends ConnectionPool implements InterfaceExch
                                            String toCurrency,
                                            BigDecimal amount) throws SQLException {
 
-        ExchangeDTO USDfrom = new ExchangeDTO();
-        ExchangeDTO USDto = new ExchangeDTO();
-
-//        USDfrom = exchange("USD", toCurrency, amount);
-//        USDto = exchange("USD", fromCurrency, amount);
-        USDfrom = getExchangeDTOAndCheckUSDForCrossСourse("USD", toCurrency, amount);
-        USDto = getExchangeDTOAndCheckUSDForCrossСourse("USD", fromCurrency, amount);
+        var USDfrom = getExchangeDTOAndCheckUSDForCrossСourse("USD", toCurrency, amount);
+        var USDto = getExchangeDTOAndCheckUSDForCrossСourse("USD", fromCurrency, amount);
 
         BigDecimal rateFromCurrency = USDfrom.getRate();
         System.out.println(rateFromCurrency + " rateFromCurrency");
@@ -235,10 +207,10 @@ public class ExchangeRateService extends ConnectionPool implements InterfaceExch
                 convertedAmount = amount.multiply(reverse);
             }
         }
-        CurrencyService currencyService = new CurrencyService();
+        CurrencyDao currencyDao = new CurrencyDao();
         ExchangeDTO exchangeDTOResult = new ExchangeDTO();
-        exchangeDTOResult.setBaseCurrency(currencyService.getCurrencyForCode(fromCurrency));
-        exchangeDTOResult.setTargetCurrency(currencyService.getCurrencyForCode(toCurrency));
+        exchangeDTOResult.setBaseCurrency(currencyDao.getCurrencyForCode(fromCurrency));
+        exchangeDTOResult.setTargetCurrency(currencyDao.getCurrencyForCode(toCurrency));
         exchangeDTOResult.setRate(rate);
         exchangeDTOResult.setAmount(amount);
         exchangeDTOResult.setConvertedAmount(convertedAmount);

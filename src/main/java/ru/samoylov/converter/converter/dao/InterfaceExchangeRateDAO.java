@@ -1,7 +1,6 @@
-package converter.converter.dao;
+package ru.samoylov.converter.converter.dao;
 
-import converter.converter.dto.ExchangeRateDTO;
-import converter.converter.models.ExchangeRate;
+import ru.samoylov.converter.converter.dto.ExchangeRateDTO;
 
 import java.math.BigDecimal;
 import java.sql.SQLException;

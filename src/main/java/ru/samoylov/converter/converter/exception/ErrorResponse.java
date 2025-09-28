@@ -1,10 +1,9 @@
-package converter.converter.exceptions;
+package ru.samoylov.converter.converter.exception;
 
 public class ErrorResponse {
     private final String message;
 
-
-    public ErrorResponse( String message) {
+    public ErrorResponse(String message) {
         this.message = message;
 
     }
@@ -12,6 +11,5 @@ public class ErrorResponse {
     public String getMessage() {
         return message;
     }
-
 
 }
